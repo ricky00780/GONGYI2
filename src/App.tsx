@@ -6,7 +6,9 @@ import {
   CalculatorOutlined, 
   BarChartOutlined,
   FileTextOutlined,
-  TeamOutlined
+  TeamOutlined,
+  BuildOutlined,
+  AppstoreOutlined
 } from '@ant-design/icons';
 import ReactFlow, { 
   Node, 
@@ -27,7 +29,12 @@ import {
   Component, 
   Material, 
   Equipment,
-  Product 
+  Product,
+  ProcessTemplate,
+  CalculationLogic,
+  CalculationVariable,
+  ProductAssembly,
+  ComponentFeature
 } from './types';
 import { 
   calculateProductTotalTime, 
@@ -36,7 +43,9 @@ import {
   calculateTotalCost,
   formatTime, 
   formatCost,
-  calculateEfficiencyMetrics 
+  calculateEfficiencyMetrics,
+  calculateFeatureStats,
+  calculateAssemblyTotalTime
 } from './utils/calculations';
 
 // 导入默认数据
@@ -44,12 +53,17 @@ import {
   defaultEfficiencyConfigs, 
   defaultMaterials, 
   defaultEquipment,
-  sampleProduct 
+  sampleProduct,
+  defaultProcessTemplates,
+  defaultCalculationLogics,
+  defaultCalculationVariables,
+  sampleProductAssembly
 } from './data/defaultData';
 
 // 导入组件
 import EfficiencyConfigManager from './components/EfficiencyConfigManager';
 import ProductDesigner from './components/ProductDesigner';
+import ProcessTemplateManager from './components/ProcessTemplateManager';
 
 const { Header, Content, Footer } = Layout;
 const { Title } = Typography;
@@ -61,6 +75,10 @@ const App: React.FC = () => {
   const [materials, setMaterials] = useState<Material[]>(defaultMaterials);
   const [equipment, setEquipment] = useState<Equipment[]>(defaultEquipment);
   const [currentProduct, setCurrentProduct] = useState<Product>(sampleProduct);
+  const [processTemplates, setProcessTemplates] = useState<ProcessTemplate[]>(defaultProcessTemplates);
+  const [calculationLogics, setCalculationLogics] = useState<CalculationLogic[]>(defaultCalculationLogics);
+  const [calculationVariables] = useState<CalculationVariable[]>(defaultCalculationVariables);
+  const [currentAssembly, setCurrentAssembly] = useState<ProductAssembly>(sampleProductAssembly);
   const [activeTab, setActiveTab] = useState('overview');
 
   // ReactFlow 状态
@@ -85,6 +103,18 @@ const App: React.FC = () => {
     message.success('效率配置已更新');
   };
 
+  // 更新工序模板
+  const updateProcessTemplates = (templates: ProcessTemplate[]) => {
+    setProcessTemplates(templates);
+    message.success('工序模板已更新');
+  };
+
+  // 更新计算逻辑
+  const updateCalculationLogics = (logics: CalculationLogic[]) => {
+    setCalculationLogics(logics);
+    message.success('计算逻辑已更新');
+  };
+
   // 计算成本
   const materialCost = calculateMaterialCost(
     currentProduct.components,
@@ -95,6 +125,7 @@ const App: React.FC = () => {
 
   // 计算效率指标
   const efficiencyMetrics = calculateEfficiencyMetrics(currentProduct.components);
+  const featureStats = calculateFeatureStats(currentProduct.components);
 
   // 更新流程图
   useEffect(() => {
@@ -134,7 +165,7 @@ const App: React.FC = () => {
             y: 150 + 80 * processIndex 
           },
           data: { 
-            label: process.processName,
+            label: process.processTemplate.name,
             type: 'process',
             process,
             component
@@ -280,39 +311,35 @@ const App: React.FC = () => {
                 </Card>
               </Col>
 
-              {/* 效率指标 */}
+              {/* 特征统计 */}
               <Col span={12}>
-                <Card title="效率指标" size="small">
+                <Card title="特征统计" size="small">
                   <Row gutter={[16, 16]}>
                     <Col span={12}>
                       <Statistic
-                        title="配置工艺数"
-                        value={efficiencyConfigs.length}
+                        title="开孔总数"
+                        value={featureStats.totalHoles}
                         valueStyle={{ color: '#1890ff' }}
                       />
                     </Col>
                     <Col span={12}>
                       <Statistic
-                        title="可用材料数"
-                        value={materials.length}
+                        title="开槽总数"
+                        value={featureStats.totalGrooves}
                         valueStyle={{ color: '#52c41a' }}
                       />
                     </Col>
                     <Col span={12}>
                       <Statistic
-                        title="设备数量"
-                        value={equipment.length}
+                        title="倒角总数"
+                        value={featureStats.totalChamfers}
                         valueStyle={{ color: '#722ed1' }}
                       />
                     </Col>
                     <Col span={12}>
                       <Statistic
-                        title="平均复杂度"
-                        value={currentProduct.components.reduce((sum, comp) => {
-                          const factor = comp.complexity === 'complex' ? 3 : comp.complexity === 'medium' ? 2 : 1;
-                          return sum + factor;
-                        }, 0) / currentProduct.components.length}
-                        precision={1}
+                        title="圆角总数"
+                        value={featureStats.totalRoundings}
                         valueStyle={{ color: '#fa8c16' }}
                       />
                     </Col>
@@ -361,6 +388,39 @@ const App: React.FC = () => {
           <TabPane 
             tab={
               <Space>
+                <BuildOutlined />
+                工序模板
+              </Space>
+            } 
+            key="templates"
+          >
+            <ProcessTemplateManager
+              processTemplates={processTemplates}
+              calculationLogics={calculationLogics}
+              calculationVariables={calculationVariables}
+              onUpdate={updateProcessTemplates}
+              onUpdateLogics={updateCalculationLogics}
+            />
+          </TabPane>
+
+          <TabPane 
+            tab={
+              <Space>
+                <AppstoreOutlined />
+                产品组合
+              </Space>
+            } 
+            key="assembly"
+          >
+            <Card title="产品组合管理">
+              <p>产品组合功能开发中...</p>
+              <p>支持多个部件组合成一个完整产品，包含组装工艺管理。</p>
+            </Card>
+          </TabPane>
+
+          <TabPane 
+            tab={
+              <Space>
                 <SettingOutlined />
                 效率配置
               </Space>
@@ -404,7 +464,7 @@ const App: React.FC = () => {
       </Content>
 
       <Footer style={{ textAlign: 'center', background: '#f0f2f5' }}>
-        板式家具加工工艺流程设计系统 ©2024 - 支持多部件尺寸计算和统一效率管理
+        板式家具加工工艺流程设计系统 ©2024 - 支持工序预建立、可编辑计算逻辑和多部件产品组合
       </Footer>
     </Layout>
   );

@@ -1,4 +1,15 @@
-import { ComponentSize, EfficiencyConfig, Component, ComponentProcess } from '../types';
+import { 
+  ComponentSize, 
+  Component, 
+  ComponentProcess, 
+  ProcessTemplate,
+  ComponentFeature,
+  ProductAssembly,
+  ProductComponent
+} from '../types';
+import { ExpressionParser } from './expressionParser';
+
+const expressionParser = new ExpressionParser();
 
 // 计算部件面积
 export const calculateArea = (size: ComponentSize): number => {
@@ -12,48 +23,59 @@ export const calculateVolume = (size: ComponentSize): number => {
 
 // 获取复杂度系数
 export const getComplexityFactor = (complexity: 'simple' | 'medium' | 'complex'): number => {
-  switch (complexity) {
-    case 'simple': return 1.0;
-    case 'medium': return 1.3;
-    case 'complex': return 1.8;
-    default: return 1.0;
-  }
+  return expressionParser.calculateComplexityFactor(complexity);
 };
 
-// 计算单个工艺的加工时间
+// 计算特征影响系数
+export const getFeatureFactor = (features: ComponentFeature[]): number => {
+  return expressionParser.calculateFeatureFactor(features);
+};
+
+// 计算单个工艺的加工时间（新版本）
 export const calculateProcessTime = (
-  size: ComponentSize,
-  efficiencyConfig: EfficiencyConfig,
-  complexity: 'simple' | 'medium' | 'complex'
+  component: Component,
+  processTemplate: ProcessTemplate
 ): number => {
-  const area = calculateArea(size);
-  const complexityFactor = getComplexityFactor(complexity);
-  
-  // 基础时间 + 尺寸影响 + 复杂度影响
-  let calculatedTime = efficiencyConfig.baseTime;
-  
-  // 尺寸影响：面积越大，时间越长
-  calculatedTime += (area / 10000) * efficiencyConfig.sizeFactor; // 每10000mm²增加的时间
-  
-  // 复杂度影响
-  calculatedTime *= complexityFactor;
-  
-  // 转换为分钟
-  if (efficiencyConfig.unit === 'hour') {
-    calculatedTime *= 60;
+  try {
+    // 准备变量
+    const variables: { [key: string]: number } = {
+      // 基础尺寸变量
+      length: component.size.length,
+      width: component.size.width,
+      thickness: component.size.thickness,
+      area: calculateArea(component.size),
+      volume: calculateVolume(component.size),
+      
+      // 复杂度变量
+      complexity: getComplexityFactor(component.complexity),
+      
+      // 特征变量
+      holeCount: component.features.filter(f => f.type === 'hole').reduce((sum, f) => sum + f.count, 0),
+      grooveCount: component.features.filter(f => f.type === 'groove').reduce((sum, f) => sum + f.count, 0),
+      chamferCount: component.features.filter(f => f.type === 'chamfer').reduce((sum, f) => sum + f.count, 0),
+      roundingCount: component.features.filter(f => f.type === 'rounding').reduce((sum, f) => sum + f.count, 0),
+      
+      // 特征影响系数
+      featureFactor: getFeatureFactor(component.features),
+      
+      // 数量
+      quantity: component.quantity
+    };
+
+    // 使用表达式解析器计算时间
+    const calculatedTime = expressionParser.parse(processTemplate.calculationLogic.formula, variables);
+    
+    return Math.round(calculatedTime * 100) / 100; // 保留两位小数
+  } catch (error) {
+    console.error('Process time calculation error:', error);
+    return 0;
   }
-  
-  return Math.round(calculatedTime * 100) / 100; // 保留两位小数
 };
 
 // 计算部件总加工时间
 export const calculateComponentTotalTime = (component: Component): number => {
   return component.processes.reduce((total, process) => {
-    return total + calculateProcessTime(
-      component.size,
-      process.efficiencyConfig,
-      component.complexity
-    );
+    return total + calculateProcessTime(component, process.processTemplate);
   }, 0);
 };
 
@@ -62,6 +84,19 @@ export const calculateProductTotalTime = (components: Component[]): number => {
   return components.reduce((total, component) => {
     return total + (component.totalTime * component.quantity);
   }, 0);
+};
+
+// 计算产品组合总时间
+export const calculateAssemblyTotalTime = (assembly: ProductAssembly): number => {
+  const componentTime = assembly.components.reduce((total, pc) => {
+    return total + (pc.component.totalTime * pc.quantity);
+  }, 0);
+  
+  const assemblyTime = assembly.assemblyProcesses.reduce((total, ap) => {
+    return total + ap.estimatedTime;
+  }, 0);
+  
+  return componentTime + assemblyTime;
 };
 
 // 计算材料成本
@@ -142,4 +177,53 @@ export const calculateEfficiencyMetrics = (components: Component[]) => {
     avgTimePerComponent: Math.round(avgTimePerComponent * 100) / 100,
     totalTime: calculateProductTotalTime(components)
   };
+};
+
+// 验证公式语法
+export const validateFormula = (formula: string): boolean => {
+  return expressionParser.validate(formula);
+};
+
+// 获取公式中的变量
+export const getFormulaVariables = (formula: string): string[] => {
+  return expressionParser.getVariables(formula);
+};
+
+// 格式化公式显示
+export const formatFormula = (formula: string, variables: { [key: string]: number }): string => {
+  return expressionParser.formatFormula(formula, variables);
+};
+
+// 计算特征统计
+export const calculateFeatureStats = (components: Component[]) => {
+  const stats = {
+    totalHoles: 0,
+    totalGrooves: 0,
+    totalChamfers: 0,
+    totalRoundings: 0,
+    totalFeatures: 0
+  };
+
+  components.forEach(component => {
+    component.features.forEach(feature => {
+      const count = feature.count * component.quantity;
+      switch (feature.type) {
+        case 'hole':
+          stats.totalHoles += count;
+          break;
+        case 'groove':
+          stats.totalGrooves += count;
+          break;
+        case 'chamfer':
+          stats.totalChamfers += count;
+          break;
+        case 'rounding':
+          stats.totalRoundings += count;
+          break;
+      }
+      stats.totalFeatures += count;
+    });
+  });
+
+  return stats;
 };
