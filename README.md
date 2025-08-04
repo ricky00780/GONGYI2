@@ -1,69 +1,156 @@
-# React + TypeScript + Vite
+# 板式家具加工工艺流程设计系统
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+一个基于 React + TypeScript + Ant Design + ReactFlow 的现代化板式家具加工工艺流程设计和管理系统。
 
-Currently, two official plugins are available:
+## 功能特性
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+### 🎯 核心功能
+- **工艺流程可视化**：使用 ReactFlow 实现工艺流程的图形化展示
+- **工序管理**：完整的工序增删改查功能
+- **状态跟踪**：实时显示各工序的执行状态（待开始/进行中/已完成）
+- **材料管理**：记录每个工序所需的材料和设备
+- **工时估算**：为每个工序设置预计工时
 
-## Expanding the ESLint configuration
+### 🎨 界面特性
+- **现代化UI**：基于 Ant Design 5.x 的现代化界面设计
+- **响应式布局**：支持桌面端和移动端访问
+- **交互式流程图**：可拖拽、缩放、连接的工艺流程节点
+- **数据表格**：清晰的工序信息展示和管理
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+### 📊 数据展示
+- **工艺流程概览**：图形化展示整个加工流程
+- **工序详情列表**：表格形式展示所有工序信息
+- **状态标识**：颜色编码显示工序状态
+- **操作面板**：查看、编辑、删除工序的快捷操作
 
-```js
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+## 技术栈
 
-      // Remove tseslint.configs.recommended and replace with this
-      ...tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      ...tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      ...tseslint.configs.stylisticTypeChecked,
+- **前端框架**：React 19.1.0
+- **开发语言**：TypeScript 5.8.3
+- **UI组件库**：Ant Design 5.26.7
+- **流程图库**：ReactFlow 11.11.4
+- **构建工具**：Vite 4.5.2
+- **代码规范**：ESLint 9.30.1
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+## 快速开始
+
+### 环境要求
+- Node.js >= 16.0.0
+- npm >= 8.0.0
+
+### 安装依赖
+```bash
+npm install
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+### 启动开发服务器
+```bash
+npm run dev
 ```
+
+访问 http://localhost:5173 查看应用
+
+### 构建生产版本
+```bash
+npm run build
+```
+
+### 代码检查
+```bash
+npm run lint
+```
+
+## 项目结构
+
+```
+src/
+├── main.tsx          # 应用入口文件
+├── App.tsx           # 主应用组件
+├── App.css           # 应用样式
+└── index.css         # 全局样式
+```
+
+## 使用指南
+
+### 1. 查看工艺流程
+- 页面顶部显示工艺流程的可视化图表
+- 不同颜色代表不同状态：绿色（已完成）、蓝色（进行中）、灰色（待开始）
+
+### 2. 管理工序
+- 点击"添加工序"按钮创建新工序
+- 在表格中点击"编辑"按钮修改现有工序
+- 点击"查看"按钮查看工序详细信息
+- 点击"删除"按钮删除工序
+
+### 3. 工序信息
+每个工序包含以下信息：
+- **工序名称**：工序的标识名称
+- **描述**：工序的详细说明
+- **预计工时**：完成该工序所需的时间（小时）
+- **设备**：执行该工序所需的设备
+- **材料**：该工序所需的材料清单
+- **状态**：当前执行状态
+
+### 4. 流程设计
+- 系统自动根据工序顺序生成流程图
+- 支持工序的重新排序和状态更新
+- 实时反映工艺流程的变化
+
+## 开发说明
+
+### 组件结构
+- `App.tsx`：主应用组件，包含所有业务逻辑
+- 使用 React Hooks 管理状态
+- 集成 Ant Design 组件和 ReactFlow 图表
+
+### 数据模型
+```typescript
+interface ProcessStep {
+  id: string;
+  name: string;
+  description: string;
+  duration: number;
+  equipment: string;
+  materials: string[];
+  status: 'pending' | 'in-progress' | 'completed';
+}
+```
+
+### 样式设计
+- 使用 CSS 模块化设计
+- 响应式布局适配不同屏幕尺寸
+- 统一的视觉风格和交互体验
+
+## 扩展功能
+
+### 可添加的功能
+- [ ] 工序模板管理
+- [ ] 成本计算
+- [ ] 进度跟踪
+- [ ] 数据导出
+- [ ] 用户权限管理
+- [ ] 历史记录
+- [ ] 报表生成
+
+### 技术优化
+- [ ] 状态管理优化（Redux/Zustand）
+- [ ] 性能优化
+- [ ] 单元测试
+- [ ] E2E测试
+- [ ] 国际化支持
+
+## 贡献指南
+
+1. Fork 项目
+2. 创建功能分支 (`git checkout -b feature/AmazingFeature`)
+3. 提交更改 (`git commit -m 'Add some AmazingFeature'`)
+4. 推送到分支 (`git push origin feature/AmazingFeature`)
+5. 打开 Pull Request
+
+## 许可证
+
+本项目采用 MIT 许可证 - 查看 [LICENSE](LICENSE) 文件了解详情
+
+## 联系方式
+
+如有问题或建议，请提交 Issue 或联系开发团队。
