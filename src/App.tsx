@@ -1,9 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Layout, Typography, Button, Breadcrumb } from 'antd';
+import { Layout, Typography, Button, Breadcrumb, Space } from 'antd';
 import { HomeOutlined, AppstoreOutlined, SettingOutlined } from '@ant-design/icons';
 import ProductList from './components/ProductList';
 import ComponentManager from './components/ComponentManager';
 import ProcessStepManager from './components/ProcessStepManager';
+import ProductSummary from './components/ProductSummary';
+import DataExport from './components/DataExport';
+import DataImport from './components/DataImport';
+import ProductSearch from './components/ProductSearch';
 import type { Product, Component, ProcessStep } from './types';
 import { 
   calculateComponentTotalCost, 
@@ -18,9 +22,10 @@ const { Title } = Typography;
 
 const App: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);
+  const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [selectedComponent, setSelectedComponent] = useState<Component | null>(null);
-  const [currentView, setCurrentView] = useState<'products' | 'components' | 'process'>('products');
+  const [currentView, setCurrentView] = useState<'products' | 'components' | 'process' | 'summary'>('products');
 
   // 初始化示例数据
   useEffect(() => {
@@ -154,6 +159,7 @@ const App: React.FC = () => {
     ];
 
     setProducts(sampleProducts);
+    setFilteredProducts(sampleProducts);
   }, []);
 
   // 添加产品
@@ -164,32 +170,46 @@ const App: React.FC = () => {
       createdAt: new Date(),
       updatedAt: new Date(),
     };
-    setProducts([...products, newProduct]);
+    const updatedProducts = [...products, newProduct];
+    setProducts(updatedProducts);
+    setFilteredProducts(updatedProducts);
   };
 
   // 编辑产品
   const handleEditProduct = (id: string, productData: Partial<Product>) => {
-    setProducts(products.map(product =>
+    const updatedProducts = products.map(product =>
       product.id === id
         ? { ...product, ...productData, updatedAt: new Date() }
         : product
-    ));
+    );
+    setProducts(updatedProducts);
+    setFilteredProducts(updatedProducts);
   };
 
   // 删除产品
   const handleDeleteProduct = (id: string) => {
-    setProducts(products.filter(product => product.id !== id));
+    const updatedProducts = products.filter(product => product.id !== id);
+    setProducts(updatedProducts);
+    setFilteredProducts(updatedProducts);
     if (selectedProduct?.id === id) {
       setSelectedProduct(null);
       setCurrentView('products');
     }
   };
 
+  // 导入数据
+  const handleImportData = (importedProducts: Product[]) => {
+    setProducts(importedProducts);
+    setFilteredProducts(importedProducts);
+    setSelectedProduct(null);
+    setCurrentView('products');
+  };
+
   // 选择产品
   const handleSelectProduct = (product: Product) => {
     setSelectedProduct(product);
     setSelectedComponent(null);
-    setCurrentView('components');
+    setCurrentView('summary');
   };
 
   // 添加部件
@@ -364,10 +384,11 @@ const App: React.FC = () => {
     setCurrentView('products');
   };
 
-  // 返回部件列表
-  const handleBackToComponents = () => {
-    setSelectedComponent(null);
-    setCurrentView('components');
+
+
+  // 查看产品汇总
+  const handleViewSummary = () => {
+    setCurrentView('summary');
   };
 
   const renderBreadcrumb = () => {
@@ -381,7 +402,7 @@ const App: React.FC = () => {
 
     if (selectedProduct) {
       items.push({
-        title: <Button type="link" icon={<AppstoreOutlined />} onClick={handleBackToComponents}>
+        title: <Button type="link" icon={<AppstoreOutlined />} onClick={handleViewSummary}>
           {selectedProduct.name}
         </Button>,
       });
@@ -400,14 +421,37 @@ const App: React.FC = () => {
     switch (currentView) {
       case 'products':
         return (
-          <ProductList
-            products={products}
-            onAddProduct={handleAddProduct}
-            onEditProduct={handleEditProduct}
-            onDeleteProduct={handleDeleteProduct}
-            onSelectProduct={handleSelectProduct}
-          />
+          <div>
+            <ProductSearch 
+              products={products} 
+              onFilterChange={setFilteredProducts} 
+            />
+            <div style={{ marginBottom: '16px', textAlign: 'right' }}>
+              <Space>
+                <DataImport onImportData={handleImportData} />
+                <DataExport products={products} />
+              </Space>
+            </div>
+            <ProductList
+              products={filteredProducts}
+              onAddProduct={handleAddProduct}
+              onEditProduct={handleEditProduct}
+              onDeleteProduct={handleDeleteProduct}
+              onSelectProduct={handleSelectProduct}
+            />
+          </div>
         );
+      case 'summary':
+        return selectedProduct ? (
+          <div>
+            <div style={{ marginBottom: '16px', textAlign: 'right' }}>
+              <Button type="primary" onClick={() => setCurrentView('components')}>
+                管理部件
+              </Button>
+            </div>
+            <ProductSummary product={selectedProduct} />
+          </div>
+        ) : null;
       case 'components':
         return selectedProduct ? (
           <ComponentManager
